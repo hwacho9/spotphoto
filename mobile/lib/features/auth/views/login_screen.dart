@@ -19,19 +19,11 @@ class LoginScreen extends HookConsumerWidget {
     // 폼 키 생성
     final formKey = useMemoized(() => GlobalKey<FormState>());
 
-    // 이전 인증 상태 추적
-    final prevAuthState = usePrevious(authState);
-
-    // 로그인 성공 시 처리
+    // 로그인 상태 확인
     useEffect(() {
-      if (prevAuthState != null &&
-          !prevAuthState.isAuthenticated &&
-          authState.isAuthenticated) {
-        // 로그인 성공 시 홈 화면으로 이동
+      // 이미 로그인되어 있으면 홈 화면으로 이동
+      if (authState.isAuthenticated) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('로그인이 완료되었습니다.')),
-          );
           context.go('/');
         });
       }
@@ -46,6 +38,13 @@ class LoginScreen extends HookConsumerWidget {
             emailController.text,
             passwordController.text,
           );
+
+          if (!context.mounted) return;
+
+          // 로그인 성공 시 홈 화면으로 직접 이동
+          if (authState.isAuthenticated) {
+            context.go('/');
+          }
         } catch (e) {
           // 에러는 이미 화면에 표시됨
         }

@@ -9,160 +9,49 @@ class HomeScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final homeState = ref.watch(homeViewModelProvider);
-    final authViewModel = ref.watch(authViewModelProvider.notifier);
-    final authState = ref.watch(authViewModelProvider);
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('홈'),
-        centerTitle: true,
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) async {
-              if (value == 'logout') {
-                _showLogoutDialog(context, authViewModel);
-              }
-            },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, size: 20),
-                    SizedBox(width: 8),
-                    Text('로그아웃'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
+        title: const Text('사진 스팟 앱'),
+        centerTitle: false,
       ),
-      body: homeState.when(
-        data: (photos) {
-          if (photos.isEmpty) {
-            return const _EmptyHomeView();
-          }
-
-          return _HomeContent(photos: photos);
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(
-          child: SelectableText.rich(
-            TextSpan(
-              text: '오류가 발생했습니다: ',
-              children: [
-                TextSpan(
-                  text: error.toString(),
-                  style: const TextStyle(color: Colors.red),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 로그아웃 확인 다이얼로그
-  Future<void> _showLogoutDialog(
-      BuildContext context, AuthViewModel authViewModel) async {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('로그아웃'),
-          content: const Text('정말 로그아웃 하시겠습니까?'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('취소'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('로그아웃'),
-              onPressed: () async {
-                Navigator.of(dialogContext).pop();
-                try {
-                  await authViewModel.logout();
-                  if (context.mounted) {
-                    context.go('/login');
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('로그아웃 실패: $e')),
-                    );
-                  }
-                }
-              },
-            ),
-          ],
-        );
-      },
+      body: const HomeTab(),
     );
   }
 }
 
-class _HomeContent extends StatelessWidget {
-  final List<dynamic> photos;
-
-  const _HomeContent({required this.photos});
+class HomeTab extends StatelessWidget {
+  const HomeTab({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '오늘의 핫스팟',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 8),
-                const _TrendingBanner(),
-                const SizedBox(height: 24),
-                Text(
-                  '추천 사진',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 8),
-              ],
+    return const SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: 16),
+            TrendingBanner(),
+            SizedBox(height: 24),
+            Text(
+              '내 주변 인기 스팟',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
+            SizedBox(height: 16),
+            MasonryGrid(),
+            SizedBox(height: 16),
+          ],
         ),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 16.0,
-              crossAxisSpacing: 16.0,
-              childAspectRatio: 0.75,
-            ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                return const _PhotoCard();
-              },
-              childCount: photos.length,
-            ),
-          ),
-        ),
-        const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
-      ],
+      ),
     );
   }
 }
 
-class _TrendingBanner extends StatelessWidget {
-  const _TrendingBanner();
+class TrendingBanner extends StatelessWidget {
+  const TrendingBanner({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -172,104 +61,309 @@ class _TrendingBanner extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: Colors.grey[300],
+        image: const DecorationImage(
+          image: AssetImage('assets/images/placeholder.jpg'),
+          fit: BoxFit.cover,
+        ),
       ),
-      child: Center(
-        child: Text(
-          '오늘의 핫스팟 배너',
-          style: Theme.of(context).textTheme.titleMedium,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.transparent, Colors.black87],
+          ),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text(
+                '오늘의 핫스팟',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '남산 서울타워 야경',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(
+                  Icons.location_on,
+                  color: Colors.white70,
+                  size: 14,
+                ),
+                const SizedBox(width: 4),
+                const Text(
+                  '서울 용산구',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Icon(
+                  Icons.favorite,
+                  color: Colors.white70,
+                  size: 14,
+                ),
+                const SizedBox(width: 4),
+                const Text(
+                  '2.4k',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _PhotoCard extends StatelessWidget {
-  const _PhotoCard();
+class MasonryGrid extends StatelessWidget {
+  const MasonryGrid({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+    final photos = [
+      Photo(
+        id: 1,
+        image: 'assets/images/placeholder.jpg',
+        title: '경복궁 야경',
+        location: '서울 종로구',
+        likes: 1240,
+        height: 200,
       ),
+      Photo(
+        id: 2,
+        image: 'assets/images/placeholder.jpg',
+        title: '한강 공원 석양',
+        location: '서울 영등포구',
+        likes: 890,
+        height: 150,
+      ),
+      Photo(
+        id: 3,
+        image: 'assets/images/placeholder.jpg',
+        title: '북촌 한옥마을',
+        location: '서울 종로구',
+        likes: 1560,
+        height: 250,
+      ),
+      Photo(
+        id: 4,
+        image: 'assets/images/placeholder.jpg',
+        title: '덕수궁 돌담길',
+        location: '서울 중구',
+        likes: 760,
+        height: 175,
+      ),
+      Photo(
+        id: 5,
+        image: 'assets/images/placeholder.jpg',
+        title: '서울숲 산책로',
+        location: '서울 성동구',
+        likes: 980,
+        height: 225,
+      ),
+      Photo(
+        id: 6,
+        image: 'assets/images/placeholder.jpg',
+        title: '청계천 야경',
+        location: '서울 중구',
+        likes: 1120,
+        height: 160,
+      ),
+    ];
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            children: [
+              for (var i = 0; i < photos.length; i += 2)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: PhotoCard(photo: photos[i]),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            children: [
+              for (var i = 1; i < photos.length; i += 2)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: PhotoCard(photo: photos[i]),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class Photo {
+  final int id;
+  final String image;
+  final String title;
+  final String location;
+  final int likes;
+  final double height;
+
+  const Photo({
+    required this.id,
+    required this.image,
+    required this.title,
+    required this.location,
+    required this.likes,
+    required this.height,
+  });
+}
+
+class PhotoCard extends StatelessWidget {
+  final Photo photo;
+
+  const PhotoCard({super.key, required this.photo});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Container(
-              color: Colors.grey[200],
-              width: double.infinity,
-              child: const Center(
-                child: Icon(Icons.photo, size: 48, color: Colors.grey),
+          Stack(
+            children: [
+              Container(
+                height: photo.height,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  image: DecorationImage(
+                    image: AssetImage(photo.image),
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
-            ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black26,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.bookmark_outline,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    onPressed: () {},
+                    constraints: const BoxConstraints(
+                      minHeight: 32,
+                      minWidth: 32,
+                    ),
+                    padding: EdgeInsets.zero,
+                    iconSize: 18,
+                  ),
+                ),
+              ),
+            ],
           ),
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '사진 위치',
-                  style: Theme.of(context).textTheme.titleSmall,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  photo.title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const CircleAvatar(
-                      radius: 12,
-                      backgroundColor: Colors.grey,
-                      child: Icon(Icons.person, size: 16, color: Colors.white),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          size: 12,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          photo.location,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        '사용자 이름',
-                        style: Theme.of(context).textTheme.bodySmall,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const Icon(Icons.favorite_border, size: 16),
-                    const SizedBox(width: 2),
-                    Text(
-                      '0',
-                      style: Theme.of(context).textTheme.bodySmall,
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.favorite,
+                          size: 12,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          photo.likes.toString(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyHomeView extends StatelessWidget {
-  const _EmptyHomeView();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.photo_library_outlined,
-              size: 64, color: Colors.grey),
-          const SizedBox(height: 16),
-          Text(
-            '아직 사진이 없습니다',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '첫 번째 사진을 업로드해보세요!',
-            style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],
       ),

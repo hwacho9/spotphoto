@@ -9,8 +9,8 @@ part 'auth_view_model.g.dart';
 class AuthViewModel extends _$AuthViewModel {
   @override
   AuthState build() {
-    // 앱 시작 시 자동으로 인증 상태 확인
-    checkAuthStatus();
+    // 앱 시작 시 자동으로 인증 상태 확인 (비동기적으로 실행)
+    Future.microtask(() => checkAuthStatus());
     return const AuthState();
   }
 
@@ -77,11 +77,12 @@ class AuthViewModel extends _$AuthViewModel {
   }
 
   Future<void> checkAuthStatus() async {
-    state = state.copyWith(isLoading: true, error: null);
-
     try {
+      state = state.copyWith(isLoading: true, error: null);
+
       final authService = ref.read(authServiceProvider);
       final user = await authService.getCurrentUser();
+
       state = state.copyWith(
         isLoading: false,
         user: user,
