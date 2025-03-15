@@ -31,6 +31,19 @@ class PhotoService {
     return await _photoRepository.getUserPhotos(userId);
   }
 
+  /// 특정 ID의 사진을 가져옵니다.
+  Future<PhotoModel> getPhotoById(String photoId) async {
+    try {
+      final photoData = await _photoRepository.getPhotoById(photoId);
+      if (photoData == null) {
+        throw Exception('사진을 찾을 수 없습니다');
+      }
+      return PhotoModel.fromJson(photoData);
+    } catch (e) {
+      throw Exception('사진 정보를 가져오는데 실패했습니다: $e');
+    }
+  }
+
   /// 사진을 업로드합니다. (이미지 업로드 + 데이터베이스 저장)
   Future<PhotoModel> uploadPhoto({
     required File image,
@@ -92,7 +105,7 @@ class PhotoService {
       await _photoRepository.deletePhoto(photo.id);
 
       // 2. 스토리지에서 이미지 파일 삭제
-      await _storageService.deleteImage(photo.url);
+      await _storageService.deleteImage(photo.url ?? '');
     } catch (e) {
       throw Exception('사진 삭제 실패: $e');
     }

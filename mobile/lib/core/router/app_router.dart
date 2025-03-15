@@ -11,6 +11,7 @@ import 'package:mobile/features/map/views/map_screen.dart';
 import 'package:mobile/features/profile/views/profile_screen.dart';
 import 'package:mobile/features/upload/views/upload_screen.dart';
 import 'package:mobile/features/splash/views/splash_screen.dart';
+import 'package:mobile/features/photo/views/photo_detail_screen.dart';
 import 'package:mobile/core/widgets/bottom_nav_bar.dart';
 import 'package:mobile/features/auth/view_models/auth_view_model.dart';
 
@@ -48,7 +49,8 @@ GoRouter appRouter(AppRouterRef ref) {
           currentPath == '/explore' ||
           currentPath == '/map' ||
           currentPath == '/profile' ||
-          currentPath == '/upload';
+          currentPath == '/upload' ||
+          currentPath.startsWith('/photo/');
 
       // 인증이 필요하지 않은 경로들
       final isAuthRoute = currentPath == '/login' || currentPath == '/register';
@@ -85,6 +87,17 @@ GoRouter appRouter(AppRouterRef ref) {
         path: '/register',
         name: 'register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+
+      // 사진 상세 화면
+      GoRoute(
+        path: '/photo/:id',
+        name: 'photo_detail',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final photoId = state.pathParameters['id']!;
+          return PhotoDetailScreen(photoId: photoId);
+        },
       ),
 
       // Main app shell with bottom navigation

@@ -22,7 +22,7 @@ class PhotoRepository {
       final response = await _supabaseClient
           .from('photos')
           .select('*, users:user_id(username, profile_image_url)')
-          .order('created_at', ascending: false)
+          .order('uploaded_at', ascending: false)
           .limit(10);
 
       return response
@@ -44,11 +44,29 @@ class PhotoRepository {
           .from('photos')
           .select()
           .eq('user_id', userId)
-          .order('created_at', ascending: false);
+          .order('uploaded_at', ascending: false);
 
       return response.map((photo) => PhotoModel.fromJson(photo)).toList();
     } catch (e) {
       throw Exception('Failed to get user photos: $e');
+    }
+  }
+
+  /// 특정 ID의 사진을 가져옵니다.
+  Future<Map<String, dynamic>> getPhotoById(String photoId) async {
+    try {
+      final response = await _supabaseClient
+          .from('photos')
+          .select('*, users:user_id(username)')
+          .eq('id', photoId)
+          .single();
+
+      return {
+        ...response,
+        'username': response['users']?['username'],
+      };
+    } catch (e) {
+      throw Exception('Failed to get photo by ID: $e');
     }
   }
 

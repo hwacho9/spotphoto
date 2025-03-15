@@ -22,13 +22,13 @@ PhotoModel _$PhotoModelFromJson(Map<String, dynamic> json) {
 mixin _$PhotoModel {
   String get id => throw _privateConstructorUsedError;
   @JsonKey(name: 'user_id')
-  String get userId => throw _privateConstructorUsedError;
-  String get url => throw _privateConstructorUsedError;
-  String get location => throw _privateConstructorUsedError;
+  String? get userId => throw _privateConstructorUsedError;
+  String? get url => throw _privateConstructorUsedError;
+  String? get location => throw _privateConstructorUsedError;
   List<String> get tags => throw _privateConstructorUsedError;
   String? get description => throw _privateConstructorUsedError;
   @JsonKey(name: 'uploaded_at')
-  DateTime get uploadedAt => throw _privateConstructorUsedError;
+  DateTime? get uploadedAt => throw _privateConstructorUsedError;
   int get likeCount => throw _privateConstructorUsedError;
   bool get isLiked =>
       throw _privateConstructorUsedError; // Related user info (populated by join or separate query)
@@ -53,12 +53,12 @@ abstract class $PhotoModelCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
-      @JsonKey(name: 'user_id') String userId,
-      String url,
-      String location,
+      @JsonKey(name: 'user_id') String? userId,
+      String? url,
+      String? location,
       List<String> tags,
       String? description,
-      @JsonKey(name: 'uploaded_at') DateTime uploadedAt,
+      @JsonKey(name: 'uploaded_at') DateTime? uploadedAt,
       int likeCount,
       bool isLiked,
       String? username,
@@ -81,12 +81,12 @@ class _$PhotoModelCopyWithImpl<$Res, $Val extends PhotoModel>
   @override
   $Res call({
     Object? id = null,
-    Object? userId = null,
-    Object? url = null,
-    Object? location = null,
+    Object? userId = freezed,
+    Object? url = freezed,
+    Object? location = freezed,
     Object? tags = null,
     Object? description = freezed,
-    Object? uploadedAt = null,
+    Object? uploadedAt = freezed,
     Object? likeCount = null,
     Object? isLiked = null,
     Object? username = freezed,
@@ -97,18 +97,18 @@ class _$PhotoModelCopyWithImpl<$Res, $Val extends PhotoModel>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
-      userId: null == userId
+      userId: freezed == userId
           ? _value.userId
           : userId // ignore: cast_nullable_to_non_nullable
-              as String,
-      url: null == url
+              as String?,
+      url: freezed == url
           ? _value.url
           : url // ignore: cast_nullable_to_non_nullable
-              as String,
-      location: null == location
+              as String?,
+      location: freezed == location
           ? _value.location
           : location // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       tags: null == tags
           ? _value.tags
           : tags // ignore: cast_nullable_to_non_nullable
@@ -117,10 +117,10 @@ class _$PhotoModelCopyWithImpl<$Res, $Val extends PhotoModel>
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
               as String?,
-      uploadedAt: null == uploadedAt
+      uploadedAt: freezed == uploadedAt
           ? _value.uploadedAt
           : uploadedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
+              as DateTime?,
       likeCount: null == likeCount
           ? _value.likeCount
           : likeCount // ignore: cast_nullable_to_non_nullable
@@ -151,12 +151,12 @@ abstract class _$$PhotoModelImplCopyWith<$Res>
   @useResult
   $Res call(
       {String id,
-      @JsonKey(name: 'user_id') String userId,
-      String url,
-      String location,
+      @JsonKey(name: 'user_id') String? userId,
+      String? url,
+      String? location,
       List<String> tags,
       String? description,
-      @JsonKey(name: 'uploaded_at') DateTime uploadedAt,
+      @JsonKey(name: 'uploaded_at') DateTime? uploadedAt,
       int likeCount,
       bool isLiked,
       String? username,
@@ -177,12 +177,12 @@ class __$$PhotoModelImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
-    Object? userId = null,
-    Object? url = null,
-    Object? location = null,
+    Object? userId = freezed,
+    Object? url = freezed,
+    Object? location = freezed,
     Object? tags = null,
     Object? description = freezed,
-    Object? uploadedAt = null,
+    Object? uploadedAt = freezed,
     Object? likeCount = null,
     Object? isLiked = null,
     Object? username = freezed,
@@ -193,18 +193,18 @@ class __$$PhotoModelImplCopyWithImpl<$Res>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
-      userId: null == userId
+      userId: freezed == userId
           ? _value.userId
           : userId // ignore: cast_nullable_to_non_nullable
-              as String,
-      url: null == url
+              as String?,
+      url: freezed == url
           ? _value.url
           : url // ignore: cast_nullable_to_non_nullable
-              as String,
-      location: null == location
+              as String?,
+      location: freezed == location
           ? _value.location
           : location // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       tags: null == tags
           ? _value._tags
           : tags // ignore: cast_nullable_to_non_nullable
@@ -213,10 +213,10 @@ class __$$PhotoModelImplCopyWithImpl<$Res>
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
               as String?,
-      uploadedAt: null == uploadedAt
+      uploadedAt: freezed == uploadedAt
           ? _value.uploadedAt
           : uploadedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
+              as DateTime?,
       likeCount: null == likeCount
           ? _value.likeCount
           : likeCount // ignore: cast_nullable_to_non_nullable
@@ -242,12 +242,12 @@ class __$$PhotoModelImplCopyWithImpl<$Res>
 class _$PhotoModelImpl implements _PhotoModel {
   const _$PhotoModelImpl(
       {required this.id,
-      @JsonKey(name: 'user_id') required this.userId,
-      required this.url,
-      required this.location,
+      @JsonKey(name: 'user_id') this.userId,
+      this.url,
+      this.location,
       final List<String> tags = const [],
       this.description,
-      @JsonKey(name: 'uploaded_at') required this.uploadedAt,
+      @JsonKey(name: 'uploaded_at') this.uploadedAt,
       this.likeCount = 0,
       this.isLiked = false,
       this.username,
@@ -261,11 +261,11 @@ class _$PhotoModelImpl implements _PhotoModel {
   final String id;
   @override
   @JsonKey(name: 'user_id')
-  final String userId;
+  final String? userId;
   @override
-  final String url;
+  final String? url;
   @override
-  final String location;
+  final String? location;
   final List<String> _tags;
   @override
   @JsonKey()
@@ -279,7 +279,7 @@ class _$PhotoModelImpl implements _PhotoModel {
   final String? description;
   @override
   @JsonKey(name: 'uploaded_at')
-  final DateTime uploadedAt;
+  final DateTime? uploadedAt;
   @override
   @JsonKey()
   final int likeCount;
@@ -356,12 +356,12 @@ class _$PhotoModelImpl implements _PhotoModel {
 abstract class _PhotoModel implements PhotoModel {
   const factory _PhotoModel(
       {required final String id,
-      @JsonKey(name: 'user_id') required final String userId,
-      required final String url,
-      required final String location,
+      @JsonKey(name: 'user_id') final String? userId,
+      final String? url,
+      final String? location,
       final List<String> tags,
       final String? description,
-      @JsonKey(name: 'uploaded_at') required final DateTime uploadedAt,
+      @JsonKey(name: 'uploaded_at') final DateTime? uploadedAt,
       final int likeCount,
       final bool isLiked,
       final String? username,
@@ -374,18 +374,18 @@ abstract class _PhotoModel implements PhotoModel {
   String get id;
   @override
   @JsonKey(name: 'user_id')
-  String get userId;
+  String? get userId;
   @override
-  String get url;
+  String? get url;
   @override
-  String get location;
+  String? get location;
   @override
   List<String> get tags;
   @override
   String? get description;
   @override
   @JsonKey(name: 'uploaded_at')
-  DateTime get uploadedAt;
+  DateTime? get uploadedAt;
   @override
   int get likeCount;
   @override

@@ -7,12 +7,12 @@ part 'photo_model.g.dart';
 class PhotoModel with _$PhotoModel {
   const factory PhotoModel({
     required String id,
-    @JsonKey(name: 'user_id') required String userId,
-    required String url,
-    required String location,
+    @JsonKey(name: 'user_id') String? userId,
+    String? url,
+    String? location,
     @Default([]) List<String> tags,
     String? description,
-    @JsonKey(name: 'uploaded_at') required DateTime uploadedAt,
+    @JsonKey(name: 'uploaded_at') DateTime? uploadedAt,
     @Default(0) int likeCount,
     @Default(false) bool isLiked,
     // Related user info (populated by join or separate query)

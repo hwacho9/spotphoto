@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:mobile/services/user_service.dart';
+import 'package:mobile/models/user_model.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobile/services/follow_service.dart';
 
 class ExploreScreen extends HookConsumerWidget {
   const ExploreScreen({super.key});
@@ -16,21 +20,31 @@ class ExploreScreen extends HookConsumerWidget {
   }
 }
 
-class ExploreTab extends StatefulWidget {
+class ExploreTab extends ConsumerStatefulWidget {
   const ExploreTab({super.key});
 
   @override
-  State<ExploreTab> createState() => _ExploreTabState();
+  ConsumerState<ExploreTab> createState() => _ExploreTabState();
 }
 
-class _ExploreTabState extends State<ExploreTab> with TickerProviderStateMixin {
+class _ExploreTabState extends ConsumerState<ExploreTab>
+    with TickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
+  bool _isSearchFocused = false;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      _searchQuery = _searchController.text;
+    });
   }
 
   @override
@@ -42,6 +56,10 @@ class _ExploreTabState extends State<ExploreTab> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    if (_isSearchFocused) {
+      return _buildSearchView();
+    }
+
     return Column(
       children: [
         Padding(
@@ -49,7 +67,7 @@ class _ExploreTabState extends State<ExploreTab> with TickerProviderStateMixin {
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: '장소, 태그 검색',
+              hintText: '장소, 태그, 사용자 검색',
               prefixIcon: const Icon(Icons.search),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(30),
@@ -59,6 +77,12 @@ class _ExploreTabState extends State<ExploreTab> with TickerProviderStateMixin {
               fillColor: Colors.grey.shade200,
               contentPadding: const EdgeInsets.symmetric(vertical: 0),
             ),
+            onTap: () {
+              setState(() {
+                _isSearchFocused = true;
+              });
+            },
+            readOnly: true, // 수정할 수 없게 만들고 탭 이벤트만 감지
           ),
         ),
         const SizedBox(height: 8),
@@ -88,6 +112,203 @@ class _ExploreTabState extends State<ExploreTab> with TickerProviderStateMixin {
         ),
       ],
     );
+  }
+
+  Widget _buildSearchView() {
+    // 검색 화면에서 사용할 별도의 탭 컨트롤러
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return DefaultTabController(
+          length: 3,
+          child: Scaffold(
+            appBar: AppBar(
+              titleSpacing: 0,
+              automaticallyImplyLeading: false,
+              title: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () {
+                      this.setState(() {
+                        _isSearchFocused = false;
+                        _searchController.clear();
+                        _searchQuery = '';
+                      });
+                    },
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      autofocus: true,
+                      decoration: const InputDecoration(
+                        hintText: '장소, 태그, 사용자 검색',
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(vertical: 0),
+                      ),
+                      onChanged: (value) {
+                        this.setState(() {
+                          _searchQuery = value;
+                        });
+                      },
+                    ),
+                  ),
+                  if (_searchController.text.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        this.setState(() {
+                          _searchQuery = '';
+                        });
+                      },
+                    ),
+                ],
+              ),
+              bottom: const TabBar(
+                tabs: [
+                  Tab(text: '장소'),
+                  Tab(text: '태그'),
+                  Tab(text: '사용자'),
+                ],
+              ),
+            ),
+            body: TabBarView(
+              children: [
+                _buildPlaceSearchResults(),
+                _buildTagSearchResults(),
+                _buildUserSearchResults(),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPlaceSearchResults() {
+    if (_searchQuery.isEmpty) {
+      return const Center(
+        child: Text('장소를 검색해보세요'),
+      );
+    }
+
+    return const Center(
+      child: Text('장소 검색 결과'),
+    );
+  }
+
+  Widget _buildTagSearchResults() {
+    if (_searchQuery.isEmpty) {
+      return const Center(
+        child: Text('태그를 검색해보세요'),
+      );
+    }
+
+    return const Center(
+      child: Text('태그 검색 결과'),
+    );
+  }
+
+  Widget _buildUserSearchResults() {
+    if (_searchQuery.isEmpty) {
+      return const Center(
+        child: Text('사용자를 검색해보세요'),
+      );
+    }
+
+    return FutureBuilder<List<UserModel>>(
+      future: ref.read(userServiceProvider).searchUsersByUsername(_searchQuery),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Text('오류가 발생했습니다: ${snapshot.error}'),
+          );
+        }
+
+        final users = snapshot.data ?? [];
+
+        if (users.isEmpty) {
+          return const Center(
+            child: Text('검색 결과가 없습니다.'),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: users.length,
+          itemBuilder: (context, index) {
+            final user = users[index];
+            return _buildUserListItem(user);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildUserListItem(UserModel user) {
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundImage:
+            user.profileImageUrl != null && user.profileImageUrl!.isNotEmpty
+                ? NetworkImage(user.profileImageUrl!)
+                : null,
+        child: user.profileImageUrl == null || user.profileImageUrl!.isEmpty
+            ? const Icon(Icons.person)
+            : null,
+      ),
+      title: Text(user.username),
+      subtitle: Text(user.email),
+      onTap: () {
+        // 사용자 프로필로 이동
+        context.push('/profile/${user.id}');
+      },
+      trailing: _buildFollowButton(user),
+    );
+  }
+
+  Widget _buildFollowButton(UserModel user) {
+    return FutureBuilder<bool>(
+        future: ref.read(followServiceProvider).isFollowing(user.id),
+        builder: (context, snapshot) {
+          final isFollowing = snapshot.data ?? false;
+
+          return isFollowing
+              ? OutlinedButton(
+                  onPressed: () => _toggleFollow(user),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Theme.of(context).primaryColor),
+                    minimumSize: const Size(80, 36),
+                  ),
+                  child: const Text('팔로잉'),
+                )
+              : ElevatedButton(
+                  onPressed: () => _toggleFollow(user),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(80, 36),
+                  ),
+                  child: const Text('팔로우'),
+                );
+        });
+  }
+
+  Future<void> _toggleFollow(UserModel user) async {
+    try {
+      final followService = ref.read(followServiceProvider);
+      await followService.toggleFollow(user.id);
+      // 상태 업데이트를 위해 화면을 새로고침
+      setState(() {});
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('팔로우 상태 변경 중 오류가 발생했습니다: $e')),
+        );
+      }
+    }
   }
 }
 

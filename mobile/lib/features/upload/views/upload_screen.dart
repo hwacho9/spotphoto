@@ -4,6 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:mobile/features/upload/view_models/upload_view_model.dart';
 
 class UploadScreen extends HookConsumerWidget {
@@ -13,6 +14,9 @@ class UploadScreen extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final uploadState = ref.watch(uploadViewModelProvider);
     final uploadViewModel = ref.watch(uploadViewModelProvider.notifier);
+
+    // 단계 상태 관리 (0: 이미지 선택, 1: 상세 정보 입력)
+    final currentStep = useState<int>(0);
 
     // 컨트롤러 생성
     final titleController = useTextEditingController();
@@ -24,6 +28,7 @@ class UploadScreen extends HookConsumerWidget {
 
     // 이미지 상태 관리
     final selectedImage = useState<File?>(null);
+    final isCropping = useState(false);
 
     // 태그 상태 관리
     final selectedTags = useState<List<String>>([]);
@@ -44,6 +49,44 @@ class UploadScreen extends HookConsumerWidget {
       '산'
     ];
 
+    // 이미지 크롭 함수
+    Future<void> cropImage(File imageFile) async {
+      isCropping.value = true;
+      try {
+        final croppedFile = await ImageCropper().cropImage(
+          sourcePath: imageFile.path,
+          compressQuality: 90,
+          uiSettings: [
+            AndroidUiSettings(
+              toolbarTitle: '사진 자르기',
+              toolbarColor: Theme.of(context).primaryColor,
+              toolbarWidgetColor: Colors.white,
+              initAspectRatio: CropAspectRatioPreset.original,
+              lockAspectRatio: false,
+            ),
+            IOSUiSettings(
+              title: '사진 자르기',
+              doneButtonTitle: '완료',
+              cancelButtonTitle: '취소',
+              aspectRatioLockEnabled: false,
+            ),
+          ],
+        );
+
+        if (croppedFile != null) {
+          selectedImage.value = File(croppedFile.path);
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('이미지 크롭 오류: $e')),
+          );
+        }
+      } finally {
+        isCropping.value = false;
+      }
+    }
+
     // 이미지 선택 함수
     Future<void> pickImage(ImageSource source) async {
       try {
@@ -56,7 +99,13 @@ class UploadScreen extends HookConsumerWidget {
         );
 
         if (pickedImage != null) {
-          selectedImage.value = File(pickedImage.path);
+          final imageFile = File(pickedImage.path);
+          // 이미지 선택 후 크롭 화면으로 이동
+          await cropImage(imageFile);
+          // 크롭 완료 후 다음 단계로 이동
+          if (selectedImage.value != null) {
+            currentStep.value = 1;
+          }
         }
       } catch (e) {
         if (context.mounted) {
@@ -140,65 +189,150 @@ class UploadScreen extends HookConsumerWidget {
       }
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('사진 업로드'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => context.pop(),
+    // 이미지 선택 화면
+    Widget buildImageSelectionStep() {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              '사진을 선택해주세요',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 24),
+            GestureDetector(
+              onTap: isCropping.value ? null : showImageSourceDialog,
+              child: Container(
+                height: 300,
+                width: 300,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: isCropping.value
+                    ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text('이미지 크롭 중...'),
+                          ],
+                        ),
+                      )
+                    : selectedImage.value != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(
+                              selectedImage.value!,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_a_photo,
+                                size: 64,
+                                color: Colors.grey[600],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                '사진을 선택해주세요',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            if (selectedImage.value != null) ...[
+              // 이미지 다시 크롭하기 버튼
+              TextButton.icon(
+                onPressed: isCropping.value
+                    ? null
+                    : () => cropImage(selectedImage.value!),
+                icon: const Icon(Icons.crop),
+                label: const Text('사진 다시 자르기'),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed:
+                    isCropping.value ? null : () => currentStep.value = 1,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 12,
+                  ),
+                ),
+                child: const Text('다음 단계로'),
+              ),
+            ],
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: uploadState.isLoading ? null : handleUpload,
-            child: const Text('업로드'),
-          ),
-        ],
-      ),
-      body: Form(
+      );
+    }
+
+    // 상세 정보 입력 화면
+    Widget buildDetailInputStep() {
+      return Form(
         key: formKey,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 이미지 선택 영역
-              GestureDetector(
-                onTap: showImageSourceDialog,
-                child: Container(
-                  height: 250,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  child: selectedImage.value != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.file(
-                            selectedImage.value!,
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.add_a_photo,
-                              size: 48,
-                              color: Colors.grey[600],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '사진을 선택해주세요',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
+              // 선택한 이미지 미리보기
+              Container(
+                height: 200,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                child: selectedImage.value != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          selectedImage.value!,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : const Center(
+                        child: Text('이미지가 선택되지 않았습니다'),
+                      ),
+              ),
+              const SizedBox(height: 16),
+
+              // 이미지 다시 선택 및 크롭 버튼
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: showImageSourceDialog,
+                      icon: const Icon(Icons.photo_camera),
+                      label: const Text('사진 다시 선택하기'),
+                    ),
+                  ),
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: selectedImage.value != null
+                          ? () => cropImage(selectedImage.value!)
+                          : null,
+                      icon: const Icon(Icons.crop),
+                      label: const Text('사진 자르기'),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
 
@@ -253,9 +387,9 @@ class UploadScreen extends HookConsumerWidget {
               ),
               const SizedBox(height: 24),
 
-              // 태그 입력
+              // 태그 선택
               const Text(
-                '태그',
+                '태그 선택',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -273,41 +407,80 @@ class UploadScreen extends HookConsumerWidget {
                     onSelected: (_) => toggleTag(tag),
                     backgroundColor: Colors.grey[200],
                     selectedColor:
-                        Theme.of(context).colorScheme.primaryContainer,
-                    checkmarkColor: Theme.of(context).colorScheme.primary,
+                        Theme.of(context).primaryColor.withOpacity(0.2),
+                    checkmarkColor: Theme.of(context).primaryColor,
                   );
                 }).toList(),
               ),
+              const SizedBox(height: 32),
 
-              if (uploadState.isLoading)
-                const Padding(
-                  padding: EdgeInsets.only(top: 24),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-
-              if (uploadState.hasError)
-                Padding(
-                  padding: const EdgeInsets.only(top: 16),
-                  child: SelectableText.rich(
-                    TextSpan(
-                      text: '오류: ',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                      children: [
-                        TextSpan(
-                          text: uploadState.error.toString(),
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontWeight: FontWeight.normal,
-                          ),
-                        ),
-                      ],
-                    ),
+              // 업로드 버튼
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: uploadState.isLoading || isCropping.value
+                      ? null
+                      : handleUpload,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
+                  child: uploadState.isLoading || isCropping.value
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('업로드하기'),
                 ),
+              ),
             ],
           ),
         ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(currentStep.value == 0 ? '사진 선택' : '사진 업로드'),
+        leading: currentStep.value == 0
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => context.pop(),
+              )
+            : IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => currentStep.value = 0,
+              ),
+        actions: currentStep.value == 1
+            ? [
+                TextButton(
+                  onPressed: uploadState.isLoading || isCropping.value
+                      ? null
+                      : handleUpload,
+                  child: const Text('업로드'),
+                ),
+              ]
+            : null,
       ),
+      body: isCropping.value
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('이미지 크롭 중...'),
+                ],
+              ),
+            )
+          : currentStep.value == 0
+              ? buildImageSelectionStep()
+              : buildDetailInputStep(),
     );
   }
 }
